@@ -1,0 +1,32 @@
+[project]
+name = "TikTokBot"
+version = "2.0.0"
+description = "Automated TikTok bot for US views, followers, likes & engagement"
+requires-python = ">=3.10"
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311", "py312"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+warn_return_any = true
+
+[tool.pylint.messages_control]
+disable = ["C0114", "C0115", "C0116", "R0903", "W0612"]
+
+[tool.pylint.format]
+max-line-length = 120
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+
+[tool.flake8]
+max-line-length = 120
+exclude = ["build", "dist", ".git", "__pycache__", ".vs"]

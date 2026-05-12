@@ -2,7 +2,7 @@
   "version": "0.2.1",
   "tasks": [
     {
-      "taskLabel": "Install Dependencies",
+      "taskLabel": "Install All Dependencies",
       "appliesTo": "requirements.txt",
       "type": "command",
       "command": "python",
@@ -26,7 +26,7 @@
       "contextType": "default"
     },
     {
-      "taskLabel": "Scrape Fresh Proxies",
+      "taskLabel": "Scrape Fresh US Proxies",
       "appliesTo": "proxy_scraper.py",
       "type": "command",
       "command": "python",
@@ -34,7 +34,7 @@
       "contextType": "default"
     },
     {
-      "taskLabel": "Build .exe",
+      "taskLabel": "Build .exe (Windows)",
       "appliesTo": "build_exe.py",
       "type": "command",
       "command": "python",
@@ -42,11 +42,59 @@
       "contextType": "build"
     },
     {
-      "taskLabel": "Test Setup",
+      "taskLabel": "Verify Setup",
       "appliesTo": "test_setup.py",
       "type": "command",
       "command": "python",
       "args": ["test_setup.py"],
+      "contextType": "default"
+    },
+    {
+      "taskLabel": "Format Code (Black)",
+      "appliesTo": "*.py",
+      "type": "command",
+      "command": "python",
+      "args": ["-m", "black", "."],
+      "contextType": "default"
+    },
+    {
+      "taskLabel": "Sort Imports (isort)",
+      "appliesTo": "*.py",
+      "type": "command",
+      "command": "python",
+      "args": ["-m", "isort", "."],
+      "contextType": "default"
+    },
+    {
+      "taskLabel": "Lint Code (Flake8)",
+      "appliesTo": "*.py",
+      "type": "command",
+      "command": "python",
+      "args": ["-m", "flake8", "--max-line-length=120", "."],
+      "contextType": "default"
+    },
+    {
+      "taskLabel": "Lint Code (Pylint)",
+      "appliesTo": "*.py",
+      "type": "command",
+      "command": "python",
+      "args": ["-m", "pylint", "main.py", "config.py", "bot/", "browser/", "utils/"],
+      "contextType": "default"
+    },
+    {
+      "taskLabel": "Type Check (Mypy)",
+      "appliesTo": "*.py",
+      "type": "command",
+      "command": "python",
+      "args": ["-m", "mypy", "--ignore-missing-imports", "."],
+      "contextType": "default"
+    },
+    {
+      "taskLabel": "Run Tests (Pytest)",
+      "appliesTo": "*.py",
+      "type": "command",
+      "command": "python",
+      "args": ["-m", "pytest", "-v"],
       "contextType": "default"
     }
   ]
