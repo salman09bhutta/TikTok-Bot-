@@ -1,0 +1,87 @@
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "python",
+      "name": "TikTokBot - Interactive Menu",
+      "request": "launch",
+      "program": "main.py",
+      "args": [],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "python",
+      "name": "TikTokBot - Run Once",
+      "request": "launch",
+      "program": "main.py",
+      "args": ["--once"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "python",
+      "name": "TikTokBot - Views Only",
+      "request": "launch",
+      "program": "main.py",
+      "args": ["--views"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "python",
+      "name": "TikTokBot - Likes Only",
+      "request": "launch",
+      "program": "main.py",
+      "args": ["--likes"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "python",
+      "name": "TikTokBot - Follows Only",
+      "request": "launch",
+      "program": "main.py",
+      "args": ["--follows"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "python",
+      "name": "TikTokBot - Show Stats",
+      "request": "launch",
+      "program": "main.py",
+      "args": ["--stats"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "python",
+      "name": "Proxy Scraper - Refresh Proxies",
+      "request": "launch",
+      "program": "proxy_scraper.py",
+      "args": ["--test", "--update-env"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "python",
+      "name": "Test Setup",
+      "request": "launch",
+      "program": "test_setup.py",
+      "args": [],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "python",
+      "name": "Build EXE",
+      "request": "launch",
+      "program": "build_exe.py",
+      "args": ["--clean"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "version": "0.2.1",
+  "tasks": [
+    {
+      "taskLabel": "Install Dependencies",
+      "appliesTo": "requirements.txt",
+      "type": "command",
+      "command": "python",
+      "args": ["-m", "pip", "install", "-r", "requirements.txt"],
+      "contextType": "build"
+    },
+    {
+      "taskLabel": "Run Bot (All - Once)",
+      "appliesTo": "main.py",
+      "type": "command",
+      "command": "python",
+      "args": ["main.py", "--once"],
+      "contextType": "default"
+    },
+    {
+      "taskLabel": "Run Bot (Interactive Menu)",
+      "appliesTo": "main.py",
+      "type": "command",
+      "command": "python",
+      "args": ["main.py"],
+      "contextType": "default"
+    },
+    {
+      "taskLabel": "Scrape Fresh Proxies",
+      "appliesTo": "proxy_scraper.py",
+      "type": "command",
+      "command": "python",
+      "args": ["proxy_scraper.py", "--update-env"],
+      "contextType": "default"
+    },
+    {
+      "taskLabel": "Build .exe",
+      "appliesTo": "build_exe.py",
+      "type": "command",
+      "command": "python",
+      "args": ["build_exe.py", "--clean"],
+      "contextType": "build"
+    },
+    {
+      "taskLabel": "Test Setup",
+      "appliesTo": "test_setup.py",
+      "type": "command",
+      "command": "python",
+      "args": ["test_setup.py"],
+      "contextType": "default"
+    }
+  ]
+}

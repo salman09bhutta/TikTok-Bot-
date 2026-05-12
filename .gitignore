@@ -26,6 +26,24 @@ stats.json
 *.swp
 *.swo
 
+# Visual Studio
+.vs/*/v17/
+.vs/*/v18/
+.vs/*/copilot-chat/
+.vs/**/*.suo
+.vs/**/*.user
+.vs/**/.build
+.vs/**/DesignTimeBuild
+.vs/**/CopilotIndices/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+
 # OS
 .DS_Store
 Thumbs.db
