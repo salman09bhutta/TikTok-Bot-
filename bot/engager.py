@@ -25,12 +25,12 @@ class EngagementBot:
         self.likes_given = 0
         self.session_active = False
 
-    def start_session(self):
+    def start_session(self, use_proxy=True):
         """Start a new engagement session."""
-        proxy = get_random_proxy()
+        proxy = get_random_proxy() if use_proxy else None
         self.driver = create_driver(proxy=proxy)
         self.session_active = True
-        logger.info("Engagement bot session started")
+        logger.info(f"Engagement bot session started {'with proxy' if proxy else 'direct'}")
 
     def end_session(self):
         """End the current session and clean up."""

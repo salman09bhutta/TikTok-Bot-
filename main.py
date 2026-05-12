@@ -43,7 +43,7 @@ def run_view_bot():
     start_time = time.time()
 
     show_action("NAVIGATE", f"Opening @{Config.TARGET_USERNAME} profile...")
-    bot.start_session()
+    bot.start_session(use_proxy=False)  # Try direct connection first
 
     try:
         if not bot.navigate_to_profile():
@@ -107,7 +107,7 @@ def run_engagement_bot():
     start_time = time.time()
 
     show_action("NAVIGATE", f"Opening @{Config.TARGET_USERNAME} profile...")
-    bot.start_session()
+    bot.start_session(use_proxy=False)  # Try direct connection first
 
     try:
         if not bot.navigate_to_profile():

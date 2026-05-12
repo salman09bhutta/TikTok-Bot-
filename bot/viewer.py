@@ -25,12 +25,12 @@ class ViewBot:
         self.views_generated = 0
         self.session_active = False
 
-    def start_session(self):
+    def start_session(self, use_proxy=True):
         """Start a new viewing session with a fresh browser and proxy."""
-        proxy = get_random_proxy()
+        proxy = get_random_proxy() if use_proxy else None
         self.driver = create_driver(proxy=proxy)
         self.session_active = True
-        logger.info("View bot session started")
+        logger.info(f"View bot session started {'with proxy' if proxy else 'direct connection'}")
 
     def end_session(self):
         """End the current session and clean up."""
@@ -45,16 +45,34 @@ class ViewBot:
         """Navigate to the target TikTok profile page."""
         try:
             self.driver.get(Config.PROFILE_URL)
-            random_delay(2, 5)
+            random_delay(3, 7)
 
-            # Wait for video grid to load
-            WebDriverWait(self.driver, 15).until(
-                EC.presence_of_element_located(
-                    (By.CSS_SELECTOR, '[data-e2e="user-post-item"]')
-                )
-            )
-            logger.info(f"Navigated to profile: @{Config.TARGET_USERNAME}")
-            return True
+            # Try multiple selectors (TikTok changes their HTML frequently)
+            selectors = [
+                '[data-e2e="user-post-item"]',
+                '[data-e2e="user-post-item-list"]',
+                'div[class*="DivItemContainer"]',
+                'div[class*="video-feed"]',
+                'a[href*="/video/"]',
+            ]
+
+            for selector in selectors:
+                try:
+                    WebDriverWait(self.driver, 10).until(
+                        EC.presence_of_element_located((By.CSS_SELECTOR, selector))
+                    )
+                    logger.info(f"Navigated to profile: @{Config.TARGET_USERNAME}")
+                    return True
+                except TimeoutException:
+                    continue
+
+            # If no video selectors found, check if page loaded at all
+            if Config.TARGET_USERNAME.lower() in self.driver.page_source.lower():
+                logger.info(f"Profile loaded (no videos yet): @{Config.TARGET_USERNAME}")
+                return True
+
+            logger.warning("Profile page timed out or videos not found")
+            return False
 
         except TimeoutException:
             logger.warning("Profile page timed out or videos not found")
@@ -66,10 +84,35 @@ class ViewBot:
     def get_video_links(self):
         """Extract video links from the profile page."""
         try:
-            video_elements = self.driver.find_elements(
-                By.CSS_SELECTOR, '[data-e2e="user-post-item"] a'
-            )
-            links = [el.get_attribute("href") for el in video_elements if el.get_attribute("href")]
+            links = []
+
+            # Try multiple CSS selectors
+            selectors = [
+                '[data-e2e="user-post-item"] a',
+                '[data-e2e="user-post-item-list"] a',
+                'a[href*="/video/"]',
+                'div[class*="DivItemContainer"] a',
+            ]
+
+            for selector in selectors:
+                elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
+                for el in elements:
+                    href = el.get_attribute("href")
+                    if href and "/video/" in href and href not in links:
+                        links.append(href)
+                if links:
+                    break
+
+            # Scroll down to load more videos
+            if not links:
+                self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
+                random_delay(2, 4)
+                elements = self.driver.find_elements(By.CSS_SELECTOR, 'a[href*="/video/"]')
+                for el in elements:
+                    href = el.get_attribute("href")
+                    if href and "/video/" in href and href not in links:
+                        links.append(href)
+
             logger.info(f"Found {len(links)} videos on profile")
             return links
         except Exception as e:
@@ -139,12 +182,27 @@ class ViewBot:
         self.views_generated = 0
 
         logger.info(f"Starting view bot session (target: {max_views} views)")
-        self.start_session()
+
+        # Try direct connection first, then with proxy (retry up to 3 times)
+        connected = False
+        for attempt in range(3):
+            use_proxy = attempt > 0  # First try: no proxy; then with proxy
+            logger.info(f"Connection attempt {attempt + 1}/3 ({'proxy' if use_proxy else 'direct'})")
+            self.start_session(use_proxy=use_proxy)
+
+            if self.navigate_to_profile():
+                connected = True
+                break
+            else:
+                logger.warning(f"Attempt {attempt + 1} failed, retrying...")
+                self.end_session()
+                random_delay(3, 8)
+
+        if not connected:
+            logger.error("Could not access profile after 3 attempts.")
+            return
 
         try:
-            if not self.navigate_to_profile():
-                logger.error("Could not access profile. Ending session.")
-                return
 
             video_links = self.get_video_links()
             if not video_links:
