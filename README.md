@@ -149,6 +149,97 @@ python main.py --stats
 - **Proxy Quality** - Results depend heavily on proxy quality. Residential proxies work best.
 - **No Guarantees** - TikTok's algorithm and detection methods change frequently.
 
+## Windows .exe Build (Download & Run)
+
+The bot can be compiled into a **standalone Windows .exe** that runs without needing Python installed.
+
+### Quick Build (Windows)
+
+1. **One-time setup** - double-click `install_windows.bat`
+2. **Build the .exe** - double-click `build_exe.bat`
+3. **Your .exe is at** `dist/TikTokBot.exe`
+
+### Step-by-Step Windows Instructions
+
+```powershell
+# 1. Install Python 3.10+ from https://www.python.org/downloads/
+#    CHECK "Add Python to PATH" during install!
+
+# 2. Clone this repo
+git clone https://github.com/salman09bhutta/TikTok-Bot-.git
+cd TikTok-Bot-
+
+# 3. Run the installer (installs all dependencies + PyInstaller)
+install_windows.bat
+
+# 4. Build the .exe
+python build_exe.py
+
+# 5. Your standalone .exe is ready at:
+#    dist\TikTokBot.exe
+```
+
+### Running the .exe
+
+After building, the `dist/` folder contains everything you need:
+
+```
+dist/
+├── TikTokBot.exe          # The bot executable
+├── Launch_TikTokBot.bat   # Double-click menu launcher
+├── .env                   # Your configuration (edit this!)
+├── .env.example           # Configuration template
+├── us_proxies.txt         # 6,000+ US proxies included
+└── README.txt             # Quick reference
+```
+
+**To run:**
+```cmd
+dist\TikTokBot.exe --once        # Run all bots once
+dist\TikTokBot.exe --views       # Views only
+dist\TikTokBot.exe --likes       # Likes only
+dist\TikTokBot.exe --follows     # Follows only
+dist\TikTokBot.exe --stats       # Show statistics
+dist\TikTokBot.exe               # Run on auto-schedule
+```
+
+Or just double-click **`Launch_TikTokBot.bat`** for an interactive menu.
+
+### Windows Requirements
+
+- Windows 10 or 11
+- Google Chrome installed (download from https://www.google.com/chrome/)
+- Internet connection
+- No Python needed to run the .exe (only needed to build it)
+
+### Build Options
+
+```cmd
+python build_exe.py              # Single .exe file (portable)
+python build_exe.py --onedir     # Folder build (faster startup)
+python build_exe.py --clean      # Clean previous build first
+```
+
+### Distributing to Others
+
+To share the bot with someone who doesn't have Python:
+1. Build the .exe on your machine
+2. Copy the entire `dist/` folder to a USB or zip it
+3. They just need Chrome installed + edit `.env` with their username
+4. Double-click `Launch_TikTokBot.bat` to run
+
+### Windows File List
+
+| File | Purpose |
+|------|---------|
+| `install_windows.bat` | One-time setup: installs Python deps + PyInstaller |
+| `build_exe.bat` | Builds the .exe (batch shortcut) |
+| `build_exe.py` | Full build script with options |
+| `start_bot.bat` | Run the bot directly without building .exe |
+| `tiktok_bot.spec` | PyInstaller specification file |
+
+---
+
 ## Disclaimer
 
 This tool is for educational and research purposes only. Use at your own risk. Automating interactions on TikTok may violate their Terms of Service. The authors are not responsible for any account restrictions or bans.
