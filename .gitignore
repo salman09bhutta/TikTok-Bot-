@@ -1,5 +1,5 @@
-# Environment
-.env
+# Environment (uncomment below to hide .env from git)
+# .env
 venv/
 env/
 .venv/
