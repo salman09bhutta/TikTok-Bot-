@@ -37,6 +37,8 @@ class Config:
     TARGET_USERNAME = os.getenv("TIKTOK_TARGET_USERNAME", "xxmr.building")
 
     # Proxy settings (US-based)
+    # Set USE_PROXY=true in .env to enable proxies (disabled by default since free proxies are unreliable)
+    USE_PROXY = os.getenv("USE_PROXY", "false").lower() == "true"
     PROXY_LIST = [
         p.strip()
         for p in os.getenv("PROXY_LIST", _DEFAULT_PROXIES).split(",")
@@ -87,10 +89,6 @@ class Config:
         errors = []
         if not cls.TARGET_USERNAME:
             errors.append("TIKTOK_TARGET_USERNAME is required")
-        if not cls.PROXY_LIST:
-            errors.append(
-                "PROXY_LIST is required (US proxies needed for US engagement)"
-            )
         if errors:
             raise ValueError(
                 "Configuration errors:\n" + "\n".join(f"  - {e}" for e in errors)

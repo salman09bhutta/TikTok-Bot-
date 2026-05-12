@@ -36,10 +36,13 @@ def random_watch_time():
 def get_random_proxy():
     """
     Select a random US proxy from the configured list.
+    Returns None if proxies are disabled or list is empty.
 
     Returns:
-        Proxy string or None if no proxies configured
+        Proxy string or None if no proxies configured/enabled
     """
+    if not Config.USE_PROXY:
+        return None
     if not Config.PROXY_LIST:
         return None
     return random.choice(Config.PROXY_LIST)
