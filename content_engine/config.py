@@ -22,6 +22,10 @@ class Config:
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
+    # === Free Stock Footage API Keys ===
+    PEXELS_API_KEY = os.getenv("PEXELS_API_KEY", "")
+    PIXABAY_API_KEY = os.getenv("PIXABAY_API_KEY", "")
+
     # === YouTube API ===
     YOUTUBE_CLIENT_SECRETS_FILE = os.getenv("YOUTUBE_CLIENT_SECRETS", "client_secrets.json")
     YOUTUBE_CHANNEL_ID = os.getenv("YOUTUBE_CHANNEL_ID", "")

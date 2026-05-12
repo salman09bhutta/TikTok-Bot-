@@ -32,6 +32,7 @@ from idea_generator import IdeaGenerator
 from video_assembler import VideoAssembler
 from caption_optimizer import CaptionOptimizer
 from youtube_uploader import YouTubeUploader
+from footage_downloader import FootageDownloader
 
 try:
     from rich.console import Console
@@ -119,7 +120,59 @@ def show_status():
         print()
 
 
-def run_idea_generator():
+def run_footage_download():
+    """Download free stock footage for construction niche."""
+    fd = FootageDownloader()
+    fd.display_status()
+
+    if not fd.pexels_key and not fd.pixabay_key:
+        if HAS_RICH:
+            console.print(Panel(
+                "[bold yellow]FREE API Keys Needed[/]\n\n"
+                "Get them in 30 seconds:\n\n"
+                "1. [bold]Pexels[/] → https://www.pexels.com/api/\n"
+                "   Sign up → Copy API key\n\n"
+                "2. [bold]Pixabay[/] → https://pixabay.com/api/docs/\n"
+                "   Sign up → Copy API key\n\n"
+                "Then add to [bold]content_engine/.env[/]:\n"
+                "  PEXELS_API_KEY=your-key\n"
+                "  PIXABAY_API_KEY=your-key",
+                title="[yellow]Setup Required[/]",
+                border_style="yellow",
+            ))
+        else:
+            print("\n  Get FREE API keys:")
+            print("  Pexels: https://www.pexels.com/api/")
+            print("  Pixabay: https://pixabay.com/api/docs/")
+        return []
+
+    if HAS_RICH:
+        count = IntPrompt.ask("\n  Clips per query?", default=3)
+        queries_count = IntPrompt.ask("  How many search queries?", default=5)
+    else:
+        count = int(input("\n  Clips per query [3]: ") or "3")
+        queries_count = int(input("  How many queries [5]: ") or "5")
+
+    queries = random.sample(SEARCH_QUERIES, min(queries_count, len(SEARCH_QUERIES)))
+
+    if HAS_RICH:
+        console.print(f"\n  [cyan]Downloading {count * len(queries)} clips...[/]\n")
+
+    paths = fd.download_batch(queries=queries, clips_per_query=count)
+    fd.save_log()
+
+    if HAS_RICH:
+        console.print(f"\n  [green]Done! {len(paths)} clips ready in: {Config.FOOTAGE_DIR}[/]")
+    else:
+        print(f"\n  Done! {len(paths)} clips in: {Config.FOOTAGE_DIR}")
+
+    return paths
+
+
+# Import search queries for the menu
+from footage_downloader import SEARCH_QUERIES
+
+
     """Generate content ideas."""
     gen = IdeaGenerator()
 
@@ -325,11 +378,12 @@ def show_menu():
         table.add_column("", style="white")
 
         table.add_row("1", "Generate Content Ideas (scripts, hooks, concepts)")
-        table.add_row("2", "Assemble Video (footage → Shorts-ready MP4)")
-        table.add_row("3", "Optimize Captions & Hashtags")
-        table.add_row("4", "Upload to YouTube Shorts")
-        table.add_row("5", "Full Pipeline (idea → video → caption → upload)")
-        table.add_row("6", "Show System Status")
+        table.add_row("2", "Download FREE Stock Footage (Pexels/Pixabay)")
+        table.add_row("3", "Assemble Video (footage → Shorts-ready MP4)")
+        table.add_row("4", "Optimize Captions & Hashtags")
+        table.add_row("5", "Upload to YouTube Shorts")
+        table.add_row("6", "Full Pipeline (download → assemble → caption → upload)")
+        table.add_row("7", "Show System Status")
         table.add_row("0", "Exit")
 
         console.print(Panel(table, title="[bold magenta]Menu[/]", border_style="magenta"))
@@ -338,11 +392,12 @@ def show_menu():
         print("""
   ┌─── Menu ────────────────────────────────────────────┐
   │  [1] Generate Content Ideas                         │
-  │  [2] Assemble Video                                 │
-  │  [3] Optimize Captions & Hashtags                   │
-  │  [4] Upload to YouTube Shorts                       │
-  │  [5] Full Pipeline (idea → video → caption → upload)│
-  │  [6] Show System Status                             │
+  │  [2] Download FREE Stock Footage                    │
+  │  [3] Assemble Video                                 │
+  │  [4] Optimize Captions & Hashtags                   │
+  │  [5] Upload to YouTube Shorts                       │
+  │  [6] Full Pipeline (download → assemble → upload)   │
+  │  [7] Show System Status                             │
   │  [0] Exit                                           │
   └─────────────────────────────────────────────────────┘
         """)
@@ -362,18 +417,21 @@ def interactive_mode():
             run_idea_generator()
             input("\n  Press Enter to continue...")
         elif choice == "2":
-            run_video_assembler()
+            run_footage_download()
             input("\n  Press Enter to continue...")
         elif choice == "3":
-            run_caption_optimizer()
+            run_video_assembler()
             input("\n  Press Enter to continue...")
         elif choice == "4":
-            run_youtube_upload()
+            run_caption_optimizer()
             input("\n  Press Enter to continue...")
         elif choice == "5":
-            run_full_pipeline()
+            run_youtube_upload()
             input("\n  Press Enter to continue...")
         elif choice == "6":
+            run_full_pipeline()
+            input("\n  Press Enter to continue...")
+        elif choice == "7":
             show_status()
             input("\n  Press Enter to continue...")
         elif choice == "0":
