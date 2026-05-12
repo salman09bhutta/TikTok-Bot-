@@ -32,18 +32,18 @@ echo ""
 
 # Install Python dependencies
 echo "[3/7] Installing Python packages..."
-pip install --upgrade pip
-pip install selenium undetected-chromedriver requests python-dotenv \
-    fake-useragent schedule colorama pysocks aiohttp aiohttp-socks setuptools
+pip install --upgrade pip setuptools
+pip install selenium requests python-dotenv \
+    fake-useragent schedule colorama pysocks aiohttp aiohttp-socks
 echo "       Done."
 echo ""
 
 # Install chromedriver for Termux
-echo "[4/7] Setting up ChromeDriver..."
-CHROME_VERSION=$(chromium --version 2>/dev/null | grep -oP '\d+' | head -1)
-echo "       Chromium version: $CHROME_VERSION"
-# Termux chromium comes with matching chromedriver
+echo "[4/7] Setting up Chromium + ChromeDriver..."
 pkg install -y chromium
+# Termux chromium package includes chromedriver
+which chromedriver >/dev/null 2>&1 || pkg install -y chromium
+echo "       Chromium: $(chromium --version 2>/dev/null || echo 'installed')"
 echo "       Done."
 echo ""
 
