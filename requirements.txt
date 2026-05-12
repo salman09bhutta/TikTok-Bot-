@@ -1,0 +1,7 @@
+selenium==4.25.0
+undetected-chromedriver==3.5.5
+requests==2.32.3
+python-dotenv==1.0.1
+fake-useragent==1.5.1
+schedule==1.2.2
+colorama==0.4.6
