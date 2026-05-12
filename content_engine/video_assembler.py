@@ -27,14 +27,20 @@ from datetime import datetime
 from config import Config
 
 try:
-    from moviepy.editor import (
+    from moviepy import (
         VideoFileClip, AudioFileClip, TextClip, CompositeVideoClip,
         concatenate_videoclips, ColorClip, CompositeAudioClip,
-        vfx, afx
     )
     HAS_MOVIEPY = True
 except ImportError:
-    HAS_MOVIEPY = False
+    try:
+        from moviepy.editor import (
+            VideoFileClip, AudioFileClip, TextClip, CompositeVideoClip,
+            concatenate_videoclips, ColorClip, CompositeAudioClip,
+        )
+        HAS_MOVIEPY = True
+    except ImportError:
+        HAS_MOVIEPY = False
 
 try:
     from rich.console import Console
