@@ -2,11 +2,13 @@
 Browser driver module.
 Creates Chrome instances with US proxy support.
 Supports both desktop (undetected-chromedriver) and Termux/Android (selenium).
+Auto-detects Chrome location on Windows/Mac/Linux.
 """
 
 import platform
 import sys
 import os
+import subprocess
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -21,6 +23,93 @@ logger = setup_logger(__name__)
 def _is_termux():
     """Check if running inside Termux on Android."""
     return os.path.exists("/data/data/com.termux") or "com.termux" in os.environ.get("PREFIX", "")
+
+
+def _find_chrome_binary():
+    """Auto-detect Chrome/Chromium binary path on any platform."""
+    # If configured in .env, use that
+    if Config.CHROME_BINARY_PATH and os.path.exists(Config.CHROME_BINARY_PATH):
+        return Config.CHROME_BINARY_PATH
+
+    if sys.platform == "win32":
+        # Windows common Chrome locations
+        possible_paths = [
+            r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+            r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+            os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
+            os.path.expandvars(r"%PROGRAMFILES%\Google\Chrome\Application\chrome.exe"),
+            os.path.expandvars(r"%PROGRAMFILES(X86)%\Google\Chrome\Application\chrome.exe"),
+            # Edge as fallback (Chromium-based)
+            r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+            r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+        ]
+        for path in possible_paths:
+            if os.path.exists(path):
+                logger.info(f"Found Chrome at: {path}")
+                return path
+
+    elif sys.platform == "darwin":
+        # macOS
+        mac_paths = [
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            "/Applications/Chromium.app/Contents/MacOS/Chromium",
+        ]
+        for path in mac_paths:
+            if os.path.exists(path):
+                return path
+
+    else:
+        # Linux
+        linux_paths = [
+            "/usr/bin/google-chrome-stable",
+            "/usr/bin/google-chrome",
+            "/usr/bin/chromium-browser",
+            "/usr/bin/chromium",
+            "/snap/bin/chromium",
+        ]
+        for path in linux_paths:
+            if os.path.exists(path):
+                return path
+
+    # Try to find via 'where' (Windows) or 'which' (Unix)
+    try:
+        cmd = "where" if sys.platform == "win32" else "which"
+        result = subprocess.run(
+            [cmd, "chrome" if sys.platform == "win32" else "google-chrome"],
+            capture_output=True, text=True, timeout=5
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip().split("\n")[0]
+    except Exception:
+        pass
+
+    return None
+
+
+def _get_chromedriver_service():
+    """Get ChromeDriver service, auto-downloading if needed."""
+    try:
+        # Try webdriver-manager first (auto-downloads matching chromedriver)
+        from webdriver_manager.chrome import ChromeDriverManager
+        from selenium.webdriver.chrome.service import Service as ChromeService
+        driver_path = ChromeDriverManager().install()
+        return ChromeService(driver_path)
+    except ImportError:
+        pass
+    except Exception as e:
+        logger.debug(f"webdriver-manager failed: {e}")
+
+    # Try system chromedriver
+    try:
+        cmd = "where" if sys.platform == "win32" else "which"
+        result = subprocess.run([cmd, "chromedriver"], capture_output=True, text=True, timeout=5)
+        if result.returncode == 0 and result.stdout.strip():
+            return Service(result.stdout.strip().split("\n")[0])
+    except Exception:
+        pass
+
+    # Return None - let Selenium try to find it
+    return None
 
 
 def _get_stealth_options(proxy: str = None):
@@ -52,16 +141,16 @@ def _get_stealth_options(proxy: str = None):
         options.add_argument(f"--proxy-server={proxy}")
         logger.info(f"Using proxy: {proxy[:30]}...")
 
-    # Chrome binary path
-    if Config.CHROME_BINARY_PATH:
-        options.binary_location = Config.CHROME_BINARY_PATH
+    # Set Chrome binary path
+    chrome_path = _find_chrome_binary()
+    if chrome_path:
+        options.binary_location = chrome_path
 
     # Termux-specific options
     if _is_termux():
         options.add_argument("--disable-setuid-sandbox")
         options.add_argument("--single-process")
         options.add_argument("--disable-features=VizDisplayCompositor")
-        # Force headless on Termux (no display)
         if "--headless=new" not in str(options.arguments):
             options.add_argument("--headless=new")
 
@@ -71,21 +160,9 @@ def _get_stealth_options(proxy: str = None):
 def _apply_stealth_scripts(driver):
     """Inject JavaScript to hide automation signals."""
     stealth_scripts = [
-        # Remove navigator.webdriver flag
         "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})",
-        # Fake plugins
         "Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]})",
-        # Fake languages
         "Object.defineProperty(navigator, 'languages', {get: () => ['en-US', 'en']})",
-        # Override permissions
-        """
-        const originalQuery = window.navigator.permissions.query;
-        window.navigator.permissions.query = (parameters) => (
-            parameters.name === 'notifications' ?
-            Promise.resolve({ state: Notification.permission }) :
-            originalQuery(parameters)
-        );
-        """,
     ]
     for script in stealth_scripts:
         try:
@@ -101,7 +178,6 @@ def _create_driver_termux(proxy: str = None):
     """Create a Selenium Chrome driver for Termux/Android."""
     options = _get_stealth_options(proxy)
 
-    # Find chromedriver in Termux
     chromedriver_paths = [
         "/data/data/com.termux/files/usr/bin/chromedriver",
         "/data/data/com.termux/files/usr/bin/chromium-chromedriver",
@@ -121,19 +197,12 @@ def _create_driver_termux(proxy: str = None):
 
         driver.set_page_load_timeout(30)
         driver.implicitly_wait(10)
-
-        # Apply stealth scripts
         _apply_stealth_scripts(driver)
 
-        # Set US geolocation (New York City)
         try:
             driver.execute_cdp_cmd(
                 "Emulation.setGeolocationOverride",
-                {
-                    "latitude": 40.7128,
-                    "longitude": -74.0060,
-                    "accuracy": 100,
-                },
+                {"latitude": 40.7128, "longitude": -74.0060, "accuracy": 100},
             )
         except Exception:
             pass
@@ -148,89 +217,80 @@ def _create_driver_termux(proxy: str = None):
 
 def _create_driver_desktop(proxy: str = None):
     """Create an undetected Chrome driver for desktop (Windows/Linux/Mac)."""
+    chrome_path = _find_chrome_binary()
+
+    # Try undetected-chromedriver first
     try:
         import undetected_chromedriver as uc
-    except ImportError:
-        logger.warning("undetected-chromedriver not available, falling back to selenium")
-        return _create_driver_selenium_fallback(proxy)
 
-    options = uc.ChromeOptions()
+        options = uc.ChromeOptions()
 
-    # Anti-detection settings
-    ua = UserAgent()
-    user_agent = ua.random
-    options.add_argument(f"--user-agent={user_agent}")
+        ua = UserAgent()
+        options.add_argument(f"--user-agent={ua.random}")
+        options.add_argument("--disable-blink-features=AutomationControlled")
+        options.add_argument("--disable-infobars")
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--window-size=1920,1080")
+        options.add_argument("--lang=en-US")
+        options.add_argument("--timezone=America/New_York")
 
-    # Performance and stealth options
-    options.add_argument("--disable-blink-features=AutomationControlled")
-    options.add_argument("--disable-infobars")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--window-size=1920,1080")
-    options.add_argument("--lang=en-US")
-    options.add_argument("--timezone=America/New_York")
+        if Config.HEADLESS:
+            options.add_argument("--headless=new")
 
-    if Config.HEADLESS:
-        options.add_argument("--headless=new")
+        if proxy:
+            options.add_argument(f"--proxy-server={proxy}")
+            logger.info(f"Using proxy: {proxy[:30]}...")
 
-    if proxy:
-        options.add_argument(f"--proxy-server={proxy}")
-        logger.info(f"Using proxy: {proxy[:30]}...")
+        if chrome_path:
+            options.binary_location = chrome_path
 
-    if Config.CHROME_BINARY_PATH:
-        options.binary_location = Config.CHROME_BINARY_PATH
-
-    try:
-        driver = uc.Chrome(options=options)
+        driver = uc.Chrome(
+            options=options,
+            browser_executable_path=chrome_path,
+        )
         driver.set_page_load_timeout(30)
         driver.implicitly_wait(10)
 
-        # Set US geolocation (New York City)
         driver.execute_cdp_cmd(
             "Emulation.setGeolocationOverride",
-            {
-                "latitude": 40.7128,
-                "longitude": -74.0060,
-                "accuracy": 100,
-            },
+            {"latitude": 40.7128, "longitude": -74.0060, "accuracy": 100},
         )
-
-        # Set US locale
-        driver.execute_cdp_cmd(
-            "Emulation.setLocaleOverride", {"locale": "en-US"}
-        )
+        driver.execute_cdp_cmd("Emulation.setLocaleOverride", {"locale": "en-US"})
 
         logger.info("Browser driver created successfully (desktop mode)")
         return driver
 
+    except ImportError:
+        logger.warning("undetected-chromedriver not available, using selenium")
     except Exception as e:
         logger.error(f"undetected-chromedriver failed: {e}")
         logger.info("Falling back to standard selenium...")
-        return _create_driver_selenium_fallback(proxy)
+
+    # Fallback: standard Selenium
+    return _create_driver_selenium_fallback(proxy)
 
 
 def _create_driver_selenium_fallback(proxy: str = None):
     """Fallback: standard Selenium with stealth scripts."""
     options = _get_stealth_options(proxy)
+    service = _get_chromedriver_service()
 
     try:
-        driver = webdriver.Chrome(options=options)
+        if service:
+            driver = webdriver.Chrome(service=service, options=options)
+        else:
+            driver = webdriver.Chrome(options=options)
+
         driver.set_page_load_timeout(30)
         driver.implicitly_wait(10)
-
-        # Apply stealth scripts
         _apply_stealth_scripts(driver)
 
-        # Set US geolocation
         try:
             driver.execute_cdp_cmd(
                 "Emulation.setGeolocationOverride",
-                {
-                    "latitude": 40.7128,
-                    "longitude": -74.0060,
-                    "accuracy": 100,
-                },
+                {"latitude": 40.7128, "longitude": -74.0060, "accuracy": 100},
             )
         except Exception:
             pass
