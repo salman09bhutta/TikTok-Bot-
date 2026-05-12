@@ -8,3 +8,6 @@ colorama==0.4.6
 pysocks==1.7.1
 aiohttp==3.13.5
 aiohttp-socks==0.11.0
+rich==13.9.4
+pyfiglet==1.0.4
+tabulate==0.9.0

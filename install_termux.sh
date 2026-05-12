@@ -34,7 +34,8 @@ echo ""
 echo "[3/7] Installing Python packages..."
 pip install --upgrade pip setuptools
 pip install selenium requests python-dotenv \
-    fake-useragent schedule colorama pysocks aiohttp aiohttp-socks
+    fake-useragent schedule colorama pysocks aiohttp aiohttp-socks \
+    rich pyfiglet tabulate
 echo "       Done."
 echo ""
 
