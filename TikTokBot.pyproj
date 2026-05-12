@@ -4,12 +4,12 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>B5E4A3E0-3C8D-4F2A-9A1B-7D6E8F9C0A2B</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>main.py</StartupFile>
+    <StartupFile>TikTok_Bot_Exact.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
-    <Name>TikTokBot</Name>
+    <Name>TikTok Bot Exact</Name>
     <RootNamespace>TikTokBot</RootNamespace>
     <InterpreterId>Global|PythonCore|3.12</InterpreterId>
   </PropertyGroup>
@@ -22,6 +22,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="TikTok_Bot_Exact.py" />
     <Compile Include="main.py" />
     <Compile Include="config.py" />
     <Compile Include="proxy_scraper.py" />
