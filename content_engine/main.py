@@ -370,6 +370,50 @@ def run_full_pipeline():
             console.print(f"  Video saved at: [bold]{video_path}[/]\n")
 
 
+def run_autopilot():
+    """Run the fully autonomous pipeline on autopilot."""
+    from auto_pipeline import AutoPipeline
+
+    if HAS_RICH:
+        console.print(Panel(
+            "[bold white]AUTOPILOT MODE[/]\n"
+            "[dim]Fully autonomous: generate → download → assemble → upload[/]\n"
+            "[dim]Press Ctrl+C to stop[/]",
+            border_style="red",
+            title="[bold red]AUTONOMOUS[/]",
+        ))
+        interval = IntPrompt.ask("  Minutes between videos", default=60)
+        max_videos = Prompt.ask("  Max videos (0 = unlimited)", default="0")
+        max_videos = int(max_videos) if max_videos != "0" else None
+    else:
+        print("\n  AUTOPILOT MODE - Fully autonomous content generation")
+        interval = int(input("  Minutes between videos [60]: ") or "60")
+        max_input = input("  Max videos (0 = unlimited) [0]: ") or "0"
+        max_videos = int(max_input) if max_input != "0" else None
+
+    pipeline = AutoPipeline()
+    pipeline.run_loop(interval_minutes=interval, max_runs=max_videos)
+
+
+def run_tiktok_login():
+    """Login to TikTok and save cookies."""
+    try:
+        from tiktok_uploader import TikTokUploader
+        tt = TikTokUploader()
+        if HAS_RICH:
+            console.print("\n  [magenta]Opening browser for TikTok login...[/]")
+            console.print("  [dim]Log in manually, cookies will be saved for auto-upload.[/]\n")
+        else:
+            print("\n  Opening browser for TikTok login...")
+        tt.login(headless=False)
+        tt.close()
+    except Exception as e:
+        if HAS_RICH:
+            console.print(f"  [red]TikTok login error: {e}[/]")
+        else:
+            print(f"  TikTok login error: {e}")
+
+
 def show_menu():
     """Show interactive menu."""
     if HAS_RICH:
@@ -382,8 +426,11 @@ def show_menu():
         table.add_row("3", "Assemble Video (footage → Shorts-ready MP4)")
         table.add_row("4", "Optimize Captions & Hashtags")
         table.add_row("5", "Upload to YouTube Shorts")
-        table.add_row("6", "Full Pipeline (download → assemble → caption → upload)")
-        table.add_row("7", "Show System Status")
+        table.add_row("6", "Upload to TikTok")
+        table.add_row("7", "Full Pipeline (download → assemble → caption → upload)")
+        table.add_row("[red]8[/]", "[bold red]AUTOPILOT (auto-generate + auto-upload loop)[/]")
+        table.add_row("9", "TikTok Login (save cookies for auto-upload)")
+        table.add_row("S", "Show System Status")
         table.add_row("0", "Exit")
 
         console.print(Panel(table, title="[bold magenta]Menu[/]", border_style="magenta"))
@@ -396,8 +443,11 @@ def show_menu():
   │  [3] Assemble Video                                 │
   │  [4] Optimize Captions & Hashtags                   │
   │  [5] Upload to YouTube Shorts                       │
-  │  [6] Full Pipeline (download → assemble → upload)   │
-  │  [7] Show System Status                             │
+  │  [6] Upload to TikTok                               │
+  │  [7] Full Pipeline (download → assemble → upload)   │
+  │  [8] AUTOPILOT (auto-generate + auto-upload loop)   │
+  │  [9] TikTok Login (save cookies)                    │
+  │  [S] Show System Status                             │
   │  [0] Exit                                           │
   └─────────────────────────────────────────────────────┘
         """)
@@ -429,9 +479,35 @@ def interactive_mode():
             run_youtube_upload()
             input("\n  Press Enter to continue...")
         elif choice == "6":
-            run_full_pipeline()
+            # TikTok upload
+            try:
+                from tiktok_uploader import TikTokUploader
+                tt = TikTokUploader()
+                # Find latest video
+                if os.path.exists(Config.OUTPUT_DIR):
+                    videos = [f for f in os.listdir(Config.OUTPUT_DIR) if f.endswith(".mp4")]
+                    if videos:
+                        videos.sort(reverse=True)
+                        video_path = os.path.join(Config.OUTPUT_DIR, videos[0])
+                        co = CaptionOptimizer()
+                        caption_data = co.generate_full_caption()
+                        tt.upload(video_path, caption=caption_data.get("caption", ""))
+                    else:
+                        print("  No video found. Assemble one first.")
+                tt.close()
+            except Exception as e:
+                print(f"  TikTok error: {e}")
             input("\n  Press Enter to continue...")
         elif choice == "7":
+            run_full_pipeline()
+            input("\n  Press Enter to continue...")
+        elif choice == "8":
+            run_autopilot()
+            input("\n  Press Enter to continue...")
+        elif choice == "9":
+            run_tiktok_login()
+            input("\n  Press Enter to continue...")
+        elif choice.lower() == "s":
             show_status()
             input("\n  Press Enter to continue...")
         elif choice == "0":
@@ -457,13 +533,21 @@ def main():
     parser.add_argument("--caption", action="store_true", help="Generate captions")
     parser.add_argument("--upload", action="store_true", help="Upload to YouTube")
     parser.add_argument("--full", action="store_true", help="Run full pipeline")
+    parser.add_argument("--autopilot", action="store_true", help="Run autonomous auto-generate + auto-upload loop")
+    parser.add_argument("--every", type=int, default=60, help="Minutes between autopilot runs (default: 60)")
+    parser.add_argument("--count", type=int, default=None, help="Max videos in autopilot mode")
     parser.add_argument("--topic", type=str, default=None, help="Build topic")
 
     args = parser.parse_args()
 
     Config.ensure_dirs()
 
-    if args.ideas:
+    if args.autopilot:
+        show_banner()
+        from auto_pipeline import AutoPipeline
+        pipeline = AutoPipeline()
+        pipeline.run_loop(interval_minutes=args.every, max_runs=args.count)
+    elif args.ideas:
         show_banner()
         run_idea_generator()
     elif args.video:
